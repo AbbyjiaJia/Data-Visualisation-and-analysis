@@ -1,0 +1,288 @@
+---
+title: "5922_T1"
+author: "Abby Jia"
+date: "02/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+```
+
+```{r readdata}
+Swiss_Export <- readRDS("SwissExport.rds")
+```
+
+
+## Produce a histogram of the exports in December 2018
+
+```{r plot, echo=TRUE}
+qplot(ExportsDec2018, data = Swiss_Export)
+# qplot(Swiss_Export$ExportsDec2018)
+```
+The above plot shows right skewed. There are two outliers in 3e+09
+
+## Produce a scatterplot of January 1988 exports against December 2018 exports
+```{r plot, echo=TRUE}
+qplot(ExportsJan1988,ExportsDec2018, data = Swiss_Export)
+#qplot(Swiss_Export$ExportsJan1988, Swiss_Export$ExportsDec2018))
+```
+
+The above plot shows positive relationship. There are two outliers in top 3e+09 andright 9e+08
+因为左下角的点都聚集在一起，it is hard to observe whether there is a linear relationship between these two variables.
+
+10. Log transform thoes values
+# Log transform
+log_exp1988=log(Swiss_Export$ExportsJan1988)
+log_exp2018=log(Swiss_Export$ExportsDec2018)
+
+# Plot scatter chart
+qplot(log_exp1988,log_exp2018)
+通过将原本的两个variable log，再plot出来可以看出there is a positive linear relationship between these two variables.Than
+
+
+```{r}
+# T3_Using the Swiss Export Data, plot a bar chart of the region variable
+ggplot(Swiss_Export,aes(x=Region))+geom_bar()
+```
+
+```{r}
+# T3_Construct a density plot, rug plot and boxplot for Exports in January 1988
+
+## density plot
+ggplot(Swiss_Export,aes(x=ExportsJan1988))+geom_density()
+
+## rug plot (Useless)
+ggplot(Swiss_Export,aes(x=ExportsJan1988))+geom_rug()
+
+## Box plot (将x转换成y)
+ggplot(Swiss_Export,aes(y=ExportsJan1988))+geom_boxplot()
+```
+
+```{r}
+#scatterplot
+ggplot(Swiss_Export,aes(x=ExportsJan1988,y=ExportsDec2018))+geom_point()
+
+ggplot(Swiss_Export,aes(x=ExportsJan1988,y=ExportsDec2018))+geom_point()+scale_x_log10()+scale_y_log10()
+# The warning due to log(0)
+```
+```{r}
+credit = readRDS("Credit.rds")
+```
+
+```{r}
+# Using box plots, explore whether the distribution of age is different for the default group and non-defaultgroup. Interpret your resul
+
+ggplot(credit,aes(x=default,y=AGE))+geom_boxplot()
+#
+ggplot(credit,aes(x=default,y=AGE))+geom_boxplot(notch = T)
+```
+notch is overlapping,there is no significanr difference. There is no clear relationsip between age and default
+
+
+```{r}
+# Using box plots, explore whether the distribution of the credit limit (LIMIT_BAL) is different for thedefault group and non-default group. Interpret your result
+
+ggplot(credit,aes(x=default,y=LIMIT_BAL))+geom_boxplot()
+#
+ggplot(credit,aes(x=default,y=LIMIT_BAL))+geom_boxplot(notch = T)
+```
+
+notch is not overlapping. There is significant difference between . There is a relatipnship between 
+
+
+# Lecure 5
+```{r}
+data(diamonds)
+# price greater than 2000 and carat less than 3.
+exe1 <- diamonds %>%
+  filter((price>2000)&(carat<3))
+exe1
+
+# price greater than 2000 and cut either Very Good, Premium or Ideal.
+exe2 <- diamonds %>%
+  filter((price>2000) & (cut %in% c('Very Good', 'Premium','Ideal')))
+exe2
+
+# carat less than 2 or price greater than 500.
+exe3 <- diamonds %>%
+  filter((carat<2) | (price>500))
+exe3
+
+# carat less than 2 and cut not equal to Premium.
+exe4 <- diamonds %>%
+  filter((carat<2) & (cut != 'Premium'))
+exe4
+```
+
+```{r}
+mpgSel <- mpg %>%
+  select(mpg,cty,hwy) %>%
+  mutate(ctyMetric=0.425144*cty,
+         hwyMetric=0.425144*hwy)
+```
+
+```{r}
+# In the diamonds dataset, find the average price for each cut of diamond.
+p41exe1 <- diamonds %>%
+  group_by(cut) %>%
+  summarise(Totavg = mean(price, na.rm = TRUE))
+p41exe1
+
+#In the diamonds dataset, find the average price for each cut of diamond given that price in above 2000.
+p41exe2 <- diamonds %>%
+  filter(price > 2000) %>%
+  group_by(cut) %>%
+  summarise(avgprice = mean(price, na.rm = TRUE))
+p41exe2
+
+#In the mpg dataset find the average fuel efficiency in the city of in each year.
+p41exe3 <- mpg %>%
+  group_by(year) %>%
+  summarise(avgfuel = mean(cty))
+p41exe3
+
+#In the mpg dataset, consider Toyota, Nissan and Honda. Find the value of hwy for each of these manufacturer's most fuel efficient cars on the highway.
+p41exe4 <- mpg %>%
+  filter(manufacturer %in% c('toyota','nissan','honda'))%>%
+  group_by(manufacturer) %>%
+  summarise(avgfuel_h = mean(hwy)) 
+p41exe4
+```
+
+# Tutorial_W5
+```{r}
+# Read the data into R
+SwissExFul <- read_csv("SwissExportsFull.csv")
+
+# A column name is `NA` cannot be recognized, thus R automatically rename the column name as `X154`
+# change back to `NA` fron X154
+SwissExFul <- SwissExFul%>%rename(`NA`=X154)
+view(SwissExFul$`NA`)
+
+#Gather all countries into one column named `country`
+long <- pivot_longer(data=SwissExFul,
+                     cols=c(-Date,-Year),# except `Date` & `Year`columns, others column all pivot_longer
+                     names_to = 'country', 
+                     values_to = 'exports')
+long
+
+# Using group_by and summarise create a new dataset of yearly aggregate exports to each country
+swissyearly <- long %>%
+  group_by(Year, country) %>%
+  summarise(yearlyexports=sum(exports))
+swissyearly
+
+# Produce a scatterplot on a log-log scale of 1988 exports against 2018 exports
+swissyearlywide=swissyearly%>%
+  filter(Year%in% c(1988, 2018))%>%
+  pivot_wider(id_cols = country,names_from=Year,values_from=yearlyexports)
+swissyearlywide
+
+ggplot(swissyearlywide, aes(x=`1988`, y=`2018`))+geom_point()+scale_x_log10()+scale_y_log10()
+# Because the data include 0 value, thus it has warning message
+
+# Produce the same plot but remove all countries for which exports are zero in either 1988 or 2018.
+swissyearlywide %>%
+  filter((`1988`!= 0)&(`2018`!=0)) %>%
+  ggplot(aes(x=`1988`, y=`2018`))+geom_point()+scale_x_log10()+scale_y_log10()
+
+```
+
+```{R}
+# Read the data from this csv file into R
+apple <- read_csv("apple_options.csv")
+
+#The `Implied Volatility` column has been imported as a character variable. To plot this it must be converted toa numeric variable. Create this using themutatefunction.
+apple <- apple %>%
+  mutate(IV=gsub('%','',`Implied volatility`) %>% as.numeric/100)
+apple
+# first``是被代替的内容
+# second``是代替的内容
+# third``是from which column
+
+
+# 3. The volatility smile is best observed when options with a single expiry date are used. To use as much data as possible, find the expiry date that has the most put options.
+appleoption_put <- apple%>%
+  filter( Type=='Put')%>%
+  group_by(`Expiry date`)%>%
+  summarise(no_options=n())
+
+
+# 4.Options that are very farout of the money(very low strike price for a put option) should be excluded from the analysis. Building on previous answers, construct a data frame that only keeps put options from the expiry date in your answer to Question 3, and that have a strike price above 250.
+appleoption <- apple%>%
+  filter((Type=='Put')&(`Strike Price` > 250))%>%
+  group_by(`Expiry date`,`Strike Price`)%>%
+  summarise(no_options=n())
+
+# 5.Using the data constructed in Q4, find the median value of Implied Volatility for each Strike Price.
+applemeidan <- apple%>%
+  filter((Type=='Put')&(`Strike Price` > 250))%>%
+  group_by(`Expiry date`,`Strike Price`)%>%
+  summarise(median(IV))
+
+# 6.Plot Implied Volatility against Strike Price using a line plot.
+ggplot(apple, aes(x=IV, y=`Strike Price`))+geom_line()
+```
+
+```{r}
+library(rvest)
+html <- read_html('https://au.finance.yahoo.com/quote/AAPL/options?straddle=false')
+tab <- html_table(html)
+print(tab[[1]])
+
+```
+
+
+# W6_Lecture
+```{r p36}
+data(txhousing)
+ggplot(txhousing,aes(x=sales, y=median)) + 
+  geom_point()+
+  facet_grid(rows = vars(year), cols = vars(month))
+
+ggplot(txhousing,aes(x=sales, y=median)) + 
+  geom_point()+
+  facet_grid(~year)
+
+ggplot(txhousing,aes(x=sales, y=median)) + 
+  geom_point()+
+  facet_wrap(~year)
+```
+
+
+# W6_Tutorial
+
+```{r}
+long_filter <- long %>%
+  group_by(Year) %>%
+  filter(country %in% c('DE','US','CN','IN')) %>%
+  ggplot(aes(x=Year, y=exports))+
+  geom_line()+
+  facet_wrap(~country)
+long_filter
+```
+
+
+```{r}
+# Read data
+USState <- readRDS("USStateData.rds")
+
+# 1. Construct a bubble chart of income per capita (x axis) against life expectancy (y axis). The size of the bubble should reflect the State population, and the color should reflect the region
+ggplot(USState,aes(x=Income, y=`Life Exp`,col=Region,size=Population))+
+  geom_point()
+
+# 3. Add the state abbreviations as text on the plot
+ggplot(USState,aes(x=Income, y=`Life Exp`,col=Region,size=Population,label=Abbreviation))+
+  geom_text()
+
+# 4. If you are not satisfied with your anwser to question 6, redo the question. Hint: you may need to specifysome aesthetics within a geom.
+
+# 5.The file `USStateRed.rds` contains the same data but with the variables State, Abbreviation, Frost, Murder and HS Grad stripped out. Load this data and plot a ggpairs plot.
+USRed <- readRDS("USStateRed.rds") 
+ggpairs(USRed)
+
+# 6.Discuss some interesting features of the plot
+```
